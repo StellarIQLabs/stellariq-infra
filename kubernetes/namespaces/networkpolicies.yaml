@@ -1,0 +1,32 @@
+# Default deny + explicit allows: DB/Redis only reachable from app pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: stellariq-prod
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to: [{ podSelector: {} }]
+    - to: [{ namespaceSelector: { matchLabels: { name: kube-system } } }]
+      ports: [{ port: 53, protocol: UDP }]
+    - ports: [{ port: 443, protocol: TCP }]
+  ingress:
+    - from: [{ podSelector: {} }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: stellariq-staging
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to: [{ podSelector: {} }]
+    - to: [{ namespaceSelector: { matchLabels: { name: kube-system } } }]
+      ports: [{ port: 53, protocol: UDP }]
+    - ports: [{ port: 443, protocol: TCP }]
+  ingress:
+    - from: [{ podSelector: {} }]
