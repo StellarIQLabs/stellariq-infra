@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: consistency-reconciler
+  namespace: monitoring
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: reconciler
+              image: REGISTRY/stellariq-prod/analytics-engine:TAG
+              command: ["node", "dist/reconcile.js"]
+              envFrom:
+                - secretRef: { name: stellariq-engines-env }
+              env:
+                - name: SOROBAN_RPC_URL
+                  valueFrom: { secretKeyRef: { name: stellariq-api-env, key: SOROBAN_RPC_URL } }
+                - name: RECONCILE_METRIC_PUSHGATEWAY
+                  value: http://pushgateway.monitoring.svc:9091
