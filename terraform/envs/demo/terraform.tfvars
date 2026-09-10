@@ -1,0 +1,9 @@
+environment        = "demo"
+aws_region         = "us-east-1"
+vpc_cidr           = "10.30.0.0/16"
+db_instance_class  = "db.t4g.micro"
+db_allocated_storage = 20
+redis_node_type    = "cache.t4g.micro"
+cluster_min_size     = 1
+cluster_max_size     = 3
+cluster_desired_size = 1

@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: demo-seed
+  namespace: stellariq-staging
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: seed
+          image: REGISTRY/stellariq-staging/analytics-engine:TAG
+          command: ["node", "dist/seed-demo.js", "--markets=12", "--pools=40"]
+          envFrom:
+            - secretRef: { name: stellariq-engines-env }
