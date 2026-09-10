@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: uptime-probe
+  namespace: monitoring
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: probe
+              image: curlimages/curl:8.10.1
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  curl -fsS -m 10 -o /dev/null -w "health:%{http_code}:%{time_total}\n" https://api.stellariq.io/health
+                  curl -fsS -m 10 -o /dev/null -w "prices:%{http_code}:%{time_total}\n" "https://api.stellariq.io/v1/prices?asset=XLM"
