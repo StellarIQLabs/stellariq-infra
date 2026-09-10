@@ -1,0 +1,33 @@
+name: security-scan
+on:
+  workflow_call: {}
+  pull_request: {}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependency audit (pnpm)
+        run: pnpm audit --audit-level=high
+      - name: SAST (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: auto
+      - name: Build image for scan
+        run: docker build -t scan-target:ci -f ${{ vars.SCAN_DOCKERFILE || 'apps/api/Dockerfile' }} .
+      - name: Image scan (Trivy, fail on HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: scan-target:ci
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
