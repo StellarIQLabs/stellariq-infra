@@ -1,0 +1,15 @@
+# StellarIQ Soroban/Rust base image — pinned toolchain, non-root.
+FROM rust:1.83.0-bookworm AS base
+
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    PATH=/usr/local/cargo/bin:$PATH
+
+RUN rustup target add wasm32-unknown-unknown \
+  && cargo install --locked --version 21.5.0 stellar-cli --root /usr/local \
+  && rm -rf /usr/local/cargo/registry \
+  && groupadd -r stellariq && useradd -r -g stellariq -d /build stellariq \
+  && mkdir -p /build /app && chown stellariq:stellariq /build /app
+
+WORKDIR /build
+USER stellariq
