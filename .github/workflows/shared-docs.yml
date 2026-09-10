@@ -1,0 +1,20 @@
+# Reusable workflows live here so stellariq-app and stellariq-contract call identical logic.
+# Consumer usage (in app/data repos):
+#
+# ```yaml
+# jobs:
+#   test:
+#     uses: StellarIQLabs/stellariq-infra/.github/workflows/test.yml@main
+#   build-api:
+#     uses: StellarIQLabs/stellariq-infra/.github/workflows/build-images.yml@main
+#     with: { service: api, dockerfile: ./apps/api/Dockerfile, registry: ${{ vars.ECR_REGISTRY }}/stellariq-staging }
+#     secrets: { aws-role-arn: ${{ secrets.AWS_ROLE_ARN }} }
+# ```
+name: shared-docs
+on:
+  workflow_call: {}
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "See .github/workflows/README.md for consumer snippets"
