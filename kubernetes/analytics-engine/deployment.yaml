@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-engine
+  namespace: stellariq-prod
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: analytics-engine } }
+  template:
+    metadata: { labels: { app: analytics-engine } }
+    spec:
+      containers:
+        - name: analytics-engine
+          image: REGISTRY/stellariq-prod/analytics-engine:TAG
+          envFrom:
+            - secretRef: { name: stellariq-engines-env }
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { cpu: 2000m, memory: 4Gi }
+---
+# Scheduled OHLCV + volume aggregation (every 5 min)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analytics-ohlcv
+  namespace: stellariq-prod
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: aggregate
+              image: REGISTRY/stellariq-prod/analytics-engine:TAG
+              command: ["node", "dist/aggregate.js", "--job=ohlcv"]
+              envFrom:
+                - secretRef: { name: stellariq-engines-env }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analytics-volume
+  namespace: stellariq-prod
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: aggregate
+              image: REGISTRY/stellariq-prod/analytics-engine:TAG
+              command: ["node", "dist/aggregate.js", "--job=volume"]
+              envFrom:
+                - secretRef: { name: stellariq-engines-env }
