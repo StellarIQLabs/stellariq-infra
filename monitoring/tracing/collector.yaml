@@ -1,0 +1,39 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: stellariq
+  namespace: monitoring
+spec:
+  mode: deployment
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
+    processors:
+      batch: {}
+    exporters:
+      otlp:
+        endpoint: tempo.monitoring.svc:4317
+        tls: { insecure: true }
+      prometheus:
+        endpoint: 0.0.0.0:8889
+    service:
+      pipelines:
+        traces: { receivers: [otlp], processors: [batch], exporters: [otlp] }
+        metrics: { receivers: [otlp], processors: [batch], exporters: [prometheus] }
+---
+# Sentry-style error tracking: DSN injected via ExternalSecrets; SDKs in api + engines
+# send to https://sentry.io with tracesSampleRate=0.2 and profiles for slow quotes.
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: sentry-dsn
+  namespace: stellariq-prod
+spec:
+  refreshInterval: 1h
+  secretStoreRef: { name: aws-secrets, kind: SecretStore }
+  target: { name: sentry-dsn, creationPolicy: Owner }
+  data:
+    - { secretKey: SENTRY_DSN, remoteRef: { key: stellariq-prod/api, property: sentryDsn } }
