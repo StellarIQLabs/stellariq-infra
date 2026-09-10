@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: price-engine
+  namespace: stellariq-prod
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: price-engine } }
+  template:
+    metadata: { labels: { app: price-engine } }
+    spec:
+      containers:
+        - name: price-engine
+          image: REGISTRY/stellariq-prod/price-engine:TAG
+          envFrom:
+            - secretRef: { name: stellariq-engines-env }
+          env:
+            - name: PRICE_ENGINE_INTERVAL_MS
+              value: "15000"
+            - name: REDIS_URL
+              valueFrom: { secretKeyRef: { name: stellariq-redis-env, key: url } }
+          livenessProbe:
+            httpGet: { path: /health, port: 4200 }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: 1000m, memory: 2Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: price-engine
+  namespace: stellariq-prod
+spec:
+  selector: { app: price-engine }
+  ports: [{ port: 80, targetPort: 4200 }]
