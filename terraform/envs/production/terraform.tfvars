@@ -1,0 +1,10 @@
+environment        = "production"
+aws_region         = "us-east-1"
+vpc_cidr           = "10.20.0.0/16"
+db_instance_class  = "db.m6g.large"
+db_allocated_storage = 200
+redis_node_type    = "cache.m6g.large"
+cluster_instance_types = ["m6i.large", "m6i.xlarge"]
+cluster_min_size     = 3
+cluster_max_size     = 12
+cluster_desired_size = 4

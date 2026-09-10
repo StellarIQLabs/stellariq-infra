@@ -1,0 +1,6 @@
+# Copy to backend.hcl and fill in your state bucket. Never commit backend.hcl.
+bucket         = "stellariq-terraform-state-CHANGE_ME"
+key            = "stellariq/staging/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "stellariq-terraform-locks"
+encrypt        = true
