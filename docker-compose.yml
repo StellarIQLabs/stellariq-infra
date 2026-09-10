@@ -1,0 +1,126 @@
+version: "3.9"
+# Local parity: postgres + redis + queues + web + api + all data engines in one command.
+# Usage: docker compose up --build
+services:
+  postgres:
+    image: postgres:16.4-bookworm
+    environment:
+      POSTGRES_USER: stellariq
+      POSTGRES_PASSWORD: stellariq
+      POSTGRES_DB: stellariq
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stellariq"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.2-alpine
+    ports: ["6379:6379"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  localstack:
+    image: localstack/localstack:3.6
+    environment:
+      SERVICES: sqs,secretsmanager
+      DEFAULT_REGION: us-east-1
+    ports: ["4566:4566"]
+    volumes: [localstack:/var/lib/localstack]
+
+  migrate:
+    image: stellariq/api:local
+    build:
+      context: ../../stellariq-contract
+      dockerfile: Dockerfile.migrate
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://stellariq:stellariq@postgres:5432/stellariq
+    command: ["pnpm", "db:migrate"]
+    profiles: ["tools"]
+
+  api:
+    image: stellariq/api:local
+    build:
+      context: ../../stellariq-app
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://stellariq:stellariq@postgres:5432/stellariq
+      REDIS_URL: redis://redis:6379
+      SQS_ENDPOINT: http://localstack:4566
+      PORT: "4000"
+    ports: ["4000:4000"]
+
+  web:
+    image: stellariq/web:local
+    build:
+      context: ../../stellariq-app
+      dockerfile: apps/web/Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+  indexer:
+    image: stellariq/indexer:local
+    build:
+      context: ../../stellariq-contract
+      dockerfile: apps/indexer/Dockerfile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://stellariq:stellariq@postgres:5432/stellariq
+      REDIS_URL: redis://redis:6379
+      SOROBAN_RPC_URL: https://soroban-testnet.stellar.org
+
+  price-engine:
+    image: stellariq/price-engine:local
+    build:
+      context: ../../stellariq-contract
+      dockerfile: apps/price-engine/Dockerfile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://stellariq:stellariq@postgres:5432/stellariq
+      REDIS_URL: redis://redis:6379
+
+  analytics-engine:
+    image: stellariq/analytics-engine:local
+    build:
+      context: ../../stellariq-contract
+      dockerfile: apps/analytics-engine/Dockerfile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://stellariq:stellariq@postgres:5432/stellariq
+      REDIS_URL: redis://redis:6379
+
+  routing-engine:
+    image: stellariq/routing-engine:local
+    build:
+      context: ../../stellariq-contract
+      dockerfile: apps/routing-engine/Dockerfile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://stellariq:stellariq@postgres:5432/stellariq
+      REDIS_URL: redis://redis:6379
+    ports: ["4100:4100"]
+
+volumes:
+  pgdata:
+  redisdata:
+  localstack:
