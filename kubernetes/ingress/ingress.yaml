@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stellariq
+  namespace: stellariq-prod
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+    - hosts: [app.stellariq.io, api.stellariq.io]
+      secretName: stellariq-tls
+  rules:
+    - host: app.stellariq.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: web, port: { number: 80 } } }
+    - host: api.stellariq.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: api, port: { number: 80 } } }
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ops@stellariq.io
+    privateKeySecretRef: { name: letsencrypt-prod }
+    solvers:
+      - http01: { ingress: { class: nginx } }
