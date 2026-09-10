@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: indexer
+  namespace: stellariq-prod
+spec:
+  serviceName: indexer
+  replicas: 1
+  selector: { matchLabels: { app: indexer } }
+  template:
+    metadata: { labels: { app: indexer } }
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: indexer
+          image: REGISTRY/stellariq-prod/indexer:TAG
+          envFrom:
+            - secretRef: { name: stellariq-indexer-env }
+          env:
+            - name: INDEXER_CURSOR_PATH
+              value: /data/cursor.json
+          volumeMounts:
+            - { name: cursor, mountPath: /data }
+          livenessProbe:
+            exec: { command: ["node", "-e", "require('fs').accessSync('/tmp/healthy')"] }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { cpu: 2000m, memory: 4Gi }
+  volumeClaimTemplates:
+    - metadata: { name: cursor }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 10Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: indexer
+  namespace: stellariq-prod
+spec:
+  clusterIP: None
+  selector: { app: indexer }
+  ports: [{ port: 4101, targetPort: 4101 }]
