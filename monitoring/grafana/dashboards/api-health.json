@@ -1,0 +1,31 @@
+{
+  "title": "StellarIQ API & Market Health",
+  "tags": ["stellariq", "slo"],
+  "timezone": "utc",
+  "panels": [
+    {
+      "title": "API p95 latency (SLO < 300ms cached)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"api\"}[5m])) by (le, route))"
+        }
+      ]
+    },
+    {
+      "title": "Quote p95 latency (SLO < 1s)",
+      "type": "timeseries",
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(quote_duration_seconds_bucket[5m])) by (le))" }]
+    },
+    {
+      "title": "Ingestion lag (ledgers behind)",
+      "type": "timeseries",
+      "targets": [{ "expr": "indexer_ledger_lag" }]
+    },
+    {
+      "title": "TVL consistency gap",
+      "type": "timeseries",
+      "targets": [{ "expr": "abs(sum(pool_tvl_indexed) - sum(pool_tvl_chain))" }]
+    }
+  ]
+}
