@@ -1,0 +1,40 @@
+name: deploy-production
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image tag (commit SHA promoted from staging)
+        required: true
+      skip_approval:
+        description: Skip manual approval (emergency only)
+        required: false
+        default: "false"
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: production
+
+jobs:
+  approve:
+    if: inputs.skip_approval != 'true'
+    runs-on: ubuntu-latest
+    environment: production-approval
+    steps:
+      - run: echo "Approved for ${{ inputs.image_tag }}"
+
+  rollout:
+    needs: approve
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: aws eks update-kubeconfig --name stellariq-production --region us-east-1
+      - run: ./scripts/rollout.sh production ${{ inputs.image_tag }}
+      - name: Smoke test with automatic rollback on health failure
+        run: ./scripts/smoke.sh https://api.stellariq.io || (./scripts/rollback.sh production && exit 1)
