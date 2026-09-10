@@ -1,0 +1,60 @@
+# Low-latency quote service: sub-second target (PRD 1124). Pinned to fast nodes, HPA on latency.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: routing-engine
+  namespace: stellariq-prod
+spec:
+  replicas: 3
+  strategy: { type: RollingUpdate, rollingUpdate: { maxSurge: 2, maxUnavailable: 0 } }
+  selector: { matchLabels: { app: routing-engine } }
+  template:
+    metadata:
+      labels: { app: routing-engine }
+      annotations: { prometheus.io/scrape: "true", prometheus.io/port: "4300" }
+    spec:
+      nodeSelector: { workload: latency-sensitive }
+      tolerations:
+        - { key: latency-sensitive, operator: Exists, effect: NoSchedule }
+      containers:
+        - name: routing-engine
+          image: REGISTRY/stellariq-prod/routing-engine:TAG
+          ports: [{ containerPort: 4300 }]
+          envFrom:
+            - secretRef: { name: stellariq-engines-env }
+          env:
+            - name: QUOTE_TIMEOUT_MS
+              value: "800"
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=1024
+          livenessProbe:
+            httpGet: { path: /health, port: 4300 }
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /ready, port: 4300 }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 1000m, memory: 1Gi }
+            limits: { cpu: 4000m, memory: 4Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: routing-engine
+  namespace: stellariq-prod
+spec:
+  selector: { app: routing-engine }
+  ports: [{ port: 80, targetPort: 4300 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: routing-engine
+  namespace: stellariq-prod
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: routing-engine }
+  minReplicas: 3
+  maxReplicas: 15
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 60 } }
