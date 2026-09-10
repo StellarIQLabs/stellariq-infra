@@ -1,0 +1,32 @@
+# Gateway-level rate limiting + DDoS protection applied before traffic reaches the API.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stellariq-api-limited
+  namespace: stellariq-prod
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-rpm: "1200"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+    nginx.ingress.kubernetes.io/limit-allowlist: ""
+    # Burst + nodelay keeps p99 low while shedding floods
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "5"
+    # WAF-ish guards at edge
+    nginx.ingress.kubernetes.io/server-snippet: |
+      limit_req_status 429;
+      limit_conn_status 503;
+spec:
+  tls:
+    - hosts: [api.stellariq.io]
+      secretName: stellariq-tls
+  rules:
+    - host: api.stellariq.io
+      http:
+        paths:
+          - path: /v1/quotes
+            pathType: Prefix
+            backend: { service: { name: routing-engine, port: { number: 80 } } }
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: api, port: { number: 80 } } }
