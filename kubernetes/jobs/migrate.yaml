@@ -1,0 +1,17 @@
+# Migration job runs BEFORE app rollout so schema is always ahead of code.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: stellariq-prod
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: REGISTRY/stellariq-prod/api:TAG
+          command: ["node", "dist/migrate.js", "--lock-timeout=30s"]
+          envFrom:
+            - secretRef: { name: stellariq-api-env }
