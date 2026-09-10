@@ -1,0 +1,42 @@
+name: deploy-staging
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: staging
+
+jobs:
+  verify:
+    uses: ./.github/workflows/test.yml
+
+  build:
+    needs: verify
+    strategy:
+      matrix:
+        service: [web, api, indexer, price-engine, analytics-engine, routing-engine]
+    uses: ./.github/workflows/build-images.yml
+    with:
+      service: ${{ matrix.service }}
+      dockerfile: ./docker/${{ matrix.service }}/Dockerfile
+      registry: ${{ vars.ECR_REGISTRY }}/stellariq-staging
+    secrets:
+      aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+
+  rollout:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: aws eks update-kubeconfig --name stellariq-staging --region us-east-1
+      - run: ./scripts/rollout.sh staging ${{ github.sha }}
+      - run: ./scripts/smoke.sh https://api.staging.stellariq.io
