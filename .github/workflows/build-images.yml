@@ -1,0 +1,47 @@
+name: build-images
+on:
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+      context:
+        required: false
+        type: string
+        default: .
+      dockerfile:
+        required: true
+        type: string
+      registry:
+        required: true
+        type: string
+    secrets:
+      aws-role-arn:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: us-east-1
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: true
+          tags: |
+            ${{ inputs.registry }}/${{ inputs.service }}:${{ github.sha }}
+            ${{ inputs.registry }}/${{ inputs.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
