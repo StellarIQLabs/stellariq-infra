@@ -1,0 +1,33 @@
+name: test
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: false
+        type: string
+        default: .
+      package-manager:
+        required: false
+        type: string
+        default: pnpm
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        working-directory: ${{ inputs.working-directory }}
+      - run: pnpm lint
+        working-directory: ${{ inputs.working-directory }}
+      - run: pnpm typecheck
+        working-directory: ${{ inputs.working-directory }}
+      - run: pnpm test -- --ci
+        working-directory: ${{ inputs.working-directory }}
