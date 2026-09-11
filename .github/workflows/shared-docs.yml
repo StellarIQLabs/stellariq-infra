@@ -1,5 +1,5 @@
-# Reusable workflows live here so stellariq-app and stellariq-contract call identical logic.
-# Consumer usage (in app/data repos):
+# Reusable workflows live here so stellariq-app, stellariq-data and stellariq-contract call identical logic.
+# Consumer usage (in app/data/contract repos):
 #
 # ```yaml
 # jobs:
