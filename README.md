@@ -12,8 +12,8 @@ Provisions cloud infrastructure, deploys services, and runs CI/CD, monitoring, l
                        │
         ┌──────────────┼──────────────┐
         │              │              │
-   stellariq-app  stellariq-contract  stellariq-infra  <-- this repo
-   (product/API)   (data/intel)       (cloud/ops)
+   stellariq-app  stellariq-data  stellariq-contract  stellariq-infra  <-- this repo
+   (product/API)  (data/intel)   (contracts)       (cloud/ops)
 ```
 
 What this repo owns:
@@ -169,7 +169,7 @@ Notable manifest details:
 
 ## CI/CD (shared workflows)
 
-Reusable workflows live here and are called identically from `stellariq-app` and `stellariq-contract`
+Reusable workflows live here and are called identically from `stellariq-app`, `stellariq-data` and `stellariq-contract`
 (see `.github/workflows/README.md` for consumer snippets):
 
 | Workflow | Trigger | What it does |
@@ -283,7 +283,7 @@ backups, secrets, scalability + 3 signatures (platform/security/product).
 
 - One task = one commit (`feat(infra): <kebab-case>`), verified before commit (YAML parsed, `bash -n` clean).
 - Never commit `.env`, `backend.hcl`, or any credential; update `.env.example` when adding variables.
-- Consumer repos (`stellariq-app`, `stellariq-contract`) must call the shared workflows here — don't fork build logic.
+- Consumer repos (`stellariq-app`, `stellariq-data`, `stellariq-contract`) must call the shared workflows here — don't fork build logic.
 
 ## License
 
