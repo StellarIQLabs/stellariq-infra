@@ -36,7 +36,7 @@ services:
   migrate:
     image: stellariq/api:local
     build:
-      context: ../../stellariq-contract
+      context: ../../stellariq-data
       dockerfile: Dockerfile.migrate
     depends_on:
       postgres: { condition: service_healthy }
@@ -73,7 +73,7 @@ services:
   indexer:
     image: stellariq/indexer:local
     build:
-      context: ../../stellariq-contract
+      context: ../../stellariq-data
       dockerfile: apps/indexer/Dockerfile
     depends_on:
       postgres: { condition: service_healthy }
@@ -86,7 +86,7 @@ services:
   price-engine:
     image: stellariq/price-engine:local
     build:
-      context: ../../stellariq-contract
+      context: ../../stellariq-data
       dockerfile: apps/price-engine/Dockerfile
     depends_on:
       postgres: { condition: service_healthy }
@@ -98,7 +98,7 @@ services:
   analytics-engine:
     image: stellariq/analytics-engine:local
     build:
-      context: ../../stellariq-contract
+      context: ../../stellariq-data
       dockerfile: apps/analytics-engine/Dockerfile
     depends_on:
       postgres: { condition: service_healthy }
@@ -110,7 +110,7 @@ services:
   routing-engine:
     image: stellariq/routing-engine:local
     build:
-      context: ../../stellariq-contract
+      context: ../../stellariq-data
       dockerfile: apps/routing-engine/Dockerfile
     depends_on:
       postgres: { condition: service_healthy }
