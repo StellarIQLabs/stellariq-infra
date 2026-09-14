@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.monitoring.svc:9090
+        isDefault: true
+        editable: false
+        jsonData:
+          timeInterval: "15s"
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.monitoring.svc:3100
+        editable: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: monitoring
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: StellarIQ
+        orgId: 1
+        folder: StellarIQ
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  api-health.json: |-
+    {"uid":"stellariq-api-health","title":"StellarIQ — API & Market Health","tags":["stellariq","slo"],"timezone":"utc","schemaVersion":39,"time":{"from":"now-6h","to":"now"},"refresh":"30s","panels":[{"id":1,"title":"API p95 latency (SLO < 300ms cached)","type":"timeseries","gridPos":{"h":8,"w":12,"x":0,"y":0},"targets":[{"expr":"histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"api\"}[5m])) by (le, route))","legendFormat":"{{route}}"}],"fieldConfig":{"defaults":{"unit":"s","thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":0.3}]}}}},{"id":2,"title":"API error rate","type":"timeseries","gridPos":{"h":8,"w":12,"x":12,"y":0},"targets":[{"expr":"sum(rate(http_requests_total{job=\"api\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"api\"}[5m]))","legendFormat":"error rate"}],"fieldConfig":{"defaults":{"unit":"percentunit","thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":0.01}]}}}},{"id":3,"title":"Quote p95 latency (SLO < 1s)","type":"timeseries","gridPos":{"h":8,"w":12,"x":0,"y":8},"targets":[{"expr":"histogram_quantile(0.95, sum(rate(quote_duration_seconds_bucket{job=\"routing-engine\"}[5m])) by (le))","legendFormat":"p95 quote"}],"fieldConfig":{"defaults":{"unit":"s","thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":1}]}}}},{"id":4,"title":"Ingestion lag (ledgers behind)","type":"timeseries","gridPos":{"h":8,"w":12,"x":12,"y":8},"targets":[{"expr":"indexer_ledger_lag","legendFormat":"ledgers behind"}],"fieldConfig":{"defaults":{"unit":"short","thresholds":{"steps":[{"color":"green","value":0},{"color":"yellow","value":10},{"color":"red","value":50}]}}}},{"id":5,"title":"TVL consistency gap","type":"timeseries","gridPos":{"h":8,"w":12,"x":0,"y":16},"targets":[{"expr":"abs(sum(pool_tvl_indexed) - sum(pool_tvl_chain))","legendFormat":"gap"}],"fieldConfig":{"defaults":{"unit":"usd","thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":1000}]}}}},{"id":6,"title":"API request rate","type":"timeseries","gridPos":{"h":8,"w":12,"x":12,"y":16},"targets":[{"expr":"sum(rate(http_requests_total{job=\"api\"}[5m])) by (route)","legendFormat":"{{route}}"}],"fieldConfig":{"defaults":{"unit":"reqps"}}}]}
+  ingestion.json: |-
+    {"uid":"stellariq-ingestion","title":"StellarIQ — Ingestion & Indexer","tags":["stellariq","ingestion"],"timezone":"utc","schemaVersion":39,"time":{"from":"now-6h","to":"now"},"refresh":"30s","panels":[{"id":1,"title":"Indexed ledgers (current vs chain head)","type":"timeseries","gridPos":{"h":8,"w":12,"x":0,"y":0},"targets":[{"expr":"indexer_current_ledger","legendFormat":"indexed"},{"expr":"stellar_chain_head_ledger","legendFormat":"chain head"}],"fieldConfig":{"defaults":{"unit":"short"}}},{"id":2,"title":"Ingestion errors (15m window)","type":"stat","gridPos":{"h":8,"w":6,"x":12,"y":0},"targets":[{"expr":"increase(indexer_errors_total[15m])","legendFormat":"errors"}],"fieldConfig":{"defaults":{"thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":10}]}}}},{"id":3,"title":"Indexer memory usage","type":"timeseries","gridPos":{"h":8,"w":6,"x":18,"y":0},"targets":[{"expr":"process_resident_memory_bytes{job=\"indexer\"}","legendFormat":"RSS"}],"fieldConfig":{"defaults":{"unit":"bytes"}}},{"id":4,"title":"Swaps indexed per minute","type":"timeseries","gridPos":{"h":8,"w":12,"x":0,"y":8},"targets":[{"expr":"rate(indexer_swaps_total[5m]) * 60","legendFormat":"swaps/min"}],"fieldConfig":{"defaults":{"unit":"short"}}},{"id":5,"title":"Pools indexed per minute","type":"timeseries","gridPos":{"h":8,"w":12,"x":12,"y":8},"targets":[{"expr":"rate(indexer_pools_total[5m]) * 60","legendFormat":"pools/min"}],"fieldConfig":{"defaults":{"unit":"short"}}}]}
+  routing.json: |-
+    {"uid":"stellariq-routing","title":"StellarIQ — Routing & Quotes","tags":["stellariq","routing","slo"],"timezone":"utc","schemaVersion":39,"time":{"from":"now-6h","to":"now"},"refresh":"10s","panels":[{"id":1,"title":"Quote p50 / p95 / p99 latency","type":"timeseries","gridPos":{"h":8,"w":12,"x":0,"y":0},"targets":[{"expr":"histogram_quantile(0.50, sum(rate(quote_duration_seconds_bucket[5m])) by (le))","legendFormat":"p50"},{"expr":"histogram_quantile(0.95, sum(rate(quote_duration_seconds_bucket[5m])) by (le))","legendFormat":"p95"},{"expr":"histogram_quantile(0.99, sum(rate(quote_duration_seconds_bucket[5m])) by (le))","legendFormat":"p99"}],"fieldConfig":{"defaults":{"unit":"s","thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":1}]}}}},{"id":2,"title":"Quote requests / second","type":"timeseries","gridPos":{"h":8,"w":12,"x":12,"y":0},"targets":[{"expr":"sum(rate(quote_requests_total[5m]))","legendFormat":"req/s"}],"fieldConfig":{"defaults":{"unit":"reqps"}}},{"id":3,"title":"Quote error rate","type":"timeseries","gridPos":{"h":8,"w":12,"x":0,"y":8},"targets":[{"expr":"sum(rate(quote_errors_total[5m])) / sum(rate(quote_requests_total[5m]))","legendFormat":"error rate"}],"fieldConfig":{"defaults":{"unit":"percentunit","thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":0.01}]}}}},{"id":4,"title":"Routing engine CPU","type":"timeseries","gridPos":{"h":8,"w":12,"x":12,"y":8},"targets":[{"expr":"rate(container_cpu_usage_seconds_total{container=\"routing-engine\"}[5m])","legendFormat":"CPU cores"}],"fieldConfig":{"defaults":{"unit":"short"}}}]}

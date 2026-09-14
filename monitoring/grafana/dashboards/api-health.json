@@ -1,31 +1,103 @@
 {
-  "title": "StellarIQ API & Market Health",
+  "uid": "stellariq-api-health",
+  "title": "StellarIQ — API & Market Health",
   "tags": ["stellariq", "slo"],
   "timezone": "utc",
+  "schemaVersion": 39,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "type": "query",
+        "query": "label_values(http_request_duration_seconds_bucket, namespace)",
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "refresh": 2,
+        "current": { "text": "stellariq-prod", "value": "stellariq-prod" }
+      }
+    ]
+  },
   "panels": [
     {
+      "id": 1,
       "title": "API p95 latency (SLO < 300ms cached)",
       "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"api\"}[5m])) by (le, route))"
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"api\", namespace=\"$namespace\"}[5m])) by (le, route))",
+          "legendFormat": "{{route}}"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 0.3 }] }
+        }
+      }
     },
     {
+      "id": 2,
+      "title": "API error rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"api\", status=~\"5..\", namespace=\"$namespace\"}[5m])) / sum(rate(http_requests_total{job=\"api\", namespace=\"$namespace\"}[5m]))",
+          "legendFormat": "error rate"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 0.01 }] } } }
+    },
+    {
+      "id": 3,
       "title": "Quote p95 latency (SLO < 1s)",
       "type": "timeseries",
-      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(quote_duration_seconds_bucket[5m])) by (le))" }]
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(quote_duration_seconds_bucket{job=\"routing-engine\", namespace=\"$namespace\"}[5m])) by (le))",
+          "legendFormat": "p95 quote"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 1 }] } } }
     },
     {
+      "id": 4,
       "title": "Ingestion lag (ledgers behind)",
       "type": "timeseries",
-      "targets": [{ "expr": "indexer_ledger_lag" }]
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "indexer_ledger_lag", "legendFormat": "ledgers behind" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 50 }] } } }
     },
     {
+      "id": 5,
       "title": "TVL consistency gap",
       "type": "timeseries",
-      "targets": [{ "expr": "abs(sum(pool_tvl_indexed) - sum(pool_tvl_chain))" }]
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "abs(sum(pool_tvl_indexed) - sum(pool_tvl_chain))",
+          "legendFormat": "gap"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "usd", "thresholds": { "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 1000 }] } } }
+    },
+    {
+      "id": 6,
+      "title": "API request rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"api\", namespace=\"$namespace\"}[5m])) by (route)",
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
     }
   ]
 }
