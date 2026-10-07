@@ -20,7 +20,7 @@ Restore tested quarterly. Owner: platform on-call.
 
 ## 3. Failover (multi-AZ / region)
 
-- RDS Multi-AZ fails over automatically (~60–120s). Verify proxy endpoint, not instance endpoint, in app config.
+- RDS Multi-AZ fails over automatically (~60-120s). Verify proxy endpoint, not instance endpoint, in app config.
 - Redis: ElastiCache automatic failover to replica; verify `REDIS_URL` uses primary endpoint (DNS flips).
 - Full-region failover: restore latest snapshot into DR region, update Route53, announce status page.
 

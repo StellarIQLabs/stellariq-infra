@@ -13,7 +13,7 @@ groups:
         for: 5m
         labels: { severity: critical, channel: slack-ops }
         annotations:
-          summary: Indexer error spike — ingestion may be failing
+          summary: Indexer error spike - ingestion may be failing
       - alert: PriceEngineStale
         expr: time() - price_engine_last_update_seconds > 300
         for: 5m

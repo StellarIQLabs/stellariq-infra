@@ -1,4 +1,4 @@
-# stellariq-infra — Cloud, Deployment, Database & Operations
+# stellariq-infra - Cloud, Deployment, Database & Operations
 
 Infrastructure-as-code and operations layer for **StellarIQ** (DeFi intelligence platform for Stellar/Soroban).
 Provisions cloud infrastructure, deploys services, and runs CI/CD, monitoring, logging, backups, and secrets.
@@ -20,21 +20,21 @@ What this repo owns:
 
 | Area | Implementation |
 |---|---|
-| Cloud network | `terraform/modules/networking` — VPC, public/private/database subnets, NAT, isolated SGs |
-| Database | `terraform/modules/postgres` — RDS Postgres 16 + parameter group + RDS Proxy pooling + Secrets Manager |
+| Cloud network | `terraform/modules/networking` - VPC, public/private/database subnets, NAT, isolated SGs |
+| Database | `terraform/modules/postgres` - RDS Postgres 16 + parameter group + RDS Proxy pooling + Secrets Manager |
 | Cache/queues | `terraform/modules/redis` (ElastiCache) + `terraform/modules/queues` (SQS + DLQs, incl. FIFO price queue) |
-| Backups | `terraform/modules/backups` — AWS Backup daily plan, KMS, retention, no-recent-backup alarm |
-| Secrets | `terraform/modules/secrets` + `kubernetes/secrets/external-secrets.yaml` — Secrets Manager → ExternalSecrets, no secrets in git |
-| Registry/artifacts | `terraform/modules/registry` — ECR repos per service + S3 WASM artifact bucket |
-| Compute | `terraform/modules/cluster` — EKS + managed node group + autoscaler policy |
+| Backups | `terraform/modules/backups` - AWS Backup daily plan, KMS, retention, no-recent-backup alarm |
+| Secrets | `terraform/modules/secrets` + `kubernetes/secrets/external-secrets.yaml` - Secrets Manager → ExternalSecrets, no secrets in git |
+| Registry/artifacts | `terraform/modules/registry` - ECR repos per service + S3 WASM artifact bucket |
+| Compute | `terraform/modules/cluster` - EKS + managed node group + autoscaler policy |
 | Workloads | `kubernetes/{web,api,indexer,price-engine,analytics-engine,routing-engine}` |
-| Edge | `kubernetes/ingress/` — TLS (cert-manager/Let's Encrypt), rate-limit + DDoS guards |
-| CI/CD | `.github/workflows/` — reusable build/test/security/scan + staging auto-deploy + prod approval + auto-rollback |
+| Edge | `kubernetes/ingress/` - TLS (cert-manager/Let's Encrypt), rate-limit + DDoS guards |
+| CI/CD | `.github/workflows/` - reusable build/test/security/scan + staging auto-deploy + prod approval + auto-rollback |
 | Contracts | `scripts/deploy-contracts.sh` + `scripts/soroban-networks.sh` (testnet/mainnet switch) |
-| Simulation | `services/simulator` — pre-submission transaction simulation used by the API |
-| Observability | `monitoring/` — Prometheus, Grafana SLO dashboards, Loki logs, alerts, uptime probes, consistency reconciler, OpenTelemetry + Sentry |
-| Perf | `perf/` — k6 harnesses (API p95 < 300 ms, dashboard < 2 s, quotes < 1 s) |
-| Runbooks | `docs/` — disaster recovery, promotion strategy, launch readiness |
+| Simulation | `services/simulator` - pre-submission transaction simulation used by the API |
+| Observability | `monitoring/` - Prometheus, Grafana SLO dashboards, Loki logs, alerts, uptime probes, consistency reconciler, OpenTelemetry + Sentry |
+| Perf | `perf/` - k6 harnesses (API p95 < 300 ms, dashboard < 2 s, quotes < 1 s) |
+| Runbooks | `docs/` - disaster recovery, promotion strategy, launch readiness |
 
 ## Repository layout
 
@@ -82,10 +82,10 @@ stellariq-infra/
 | k6 | recent | only for `perf/` runs |
 | node/pnpm | 22 / 9 | only for `services/simulator` |
 
-## Quickstart — local (one command)
+## Quickstart - local (one command)
 
 ```bash
-cp .env.example .env          # fill secrets; .env is git-ignored by convention — never commit it
+cp .env.example .env          # fill secrets; .env is git-ignored by convention - never commit it
 ./scripts/bootstrap.sh        # starts postgres+redis+localstack, then all services, then smoke test
 # Web: http://localhost:3000   API: http://localhost:4000
 docker compose down           # stop everything
@@ -94,7 +94,7 @@ docker compose down           # stop everything
 `docker-compose.yml` runs: `postgres:16`, `redis:7`, `localstack` (SQS + Secrets Manager),
 `api`, `web`, `indexer`, `price-engine`, `analytics-engine`, `routing-engine`.
 
-## Quickstart — cloud (staging)
+## Quickstart - cloud (staging)
 
 ```bash
 cp terraform/backend.hcl.example terraform/backend.hcl   # set state bucket/table once
@@ -111,7 +111,7 @@ Full details: `terraform/README.md` (plan/apply/rollback) and `kubernetes/README
 
 Environments: `dev` (compose only, no cluster) → `staging` → `production`, plus ephemeral `demo`.
 Each env has tuned sizing in `terraform/envs/<env>/terraform.tfvars`
-(prod: `db.m6g.large` + 200 GB, `cache.m6g.large`, 3–12 `m6i` nodes; staging/demo smaller).
+(prod: `db.m6g.large` + 200 GB, `cache.m6g.large`, 3-12 `m6i` nodes; staging/demo smaller).
 
 ```bash
 terraform -chdir=terraform workspace select staging
@@ -121,18 +121,18 @@ terraform -chdir=terraform apply tfplan
 
 Module notes:
 
-- **networking** — one NAT gateway per AZ; DB/Redis SGs accept traffic *only* from the app SG.
-- **postgres** — Postgres 16, `pg_stat_statements`+`pgcrypto`, encrypted GP3, Multi-AZ, 7-day PITR retention,
+- **networking** - one NAT gateway per AZ; DB/Redis SGs accept traffic *only* from the app SG.
+- **postgres** - Postgres 16, `pg_stat_statements`+`pgcrypto`, encrypted GP3, Multi-AZ, 7-day PITR retention,
   Performance Insights, CloudWatch logs; **RDS Proxy** endpoint is what apps use (`proxy_endpoint` output).
-- **redis** — Redis 7 replication group, TLS + at-rest encryption, auto-failover, `volatile-lru`,
+- **redis** - Redis 7 replication group, TLS + at-rest encryption, auto-failover, `volatile-lru`,
   snapshots; connection via Secrets Manager (`rediss://` URL).
-- **queues** — `ingestion-jobs`, `analytics-pipelines`, FIFO `price-updates`, each with DLQ (max 5 receives).
-- **backups** — daily `cron(0 2 * * ? *)` AWS Backup plan (30-day cold-storage lifecycle), KMS-rotated vault,
+- **queues** - `ingestion-jobs`, `analytics-pipelines`, FIFO `price-updates`, each with DLQ (max 5 receives).
+- **backups** - daily `cron(0 2 * * ? *)` AWS Backup plan (30-day cold-storage lifecycle), KMS-rotated vault,
   plus a CloudWatch alarm when no backup completes in 26 h.
-- **secrets** — `/api` + `/app-config` secrets, rotation Lambda role, IRSA role for External Secrets Operator.
-- **registry** — immutable-tag ECR repos (`web, api, indexer, price-engine, analytics-engine, routing-engine, simulator`)
+- **secrets** - `/api` + `/app-config` secrets, rotation Lambda role, IRSA role for External Secrets Operator.
+- **registry** - immutable-tag ECR repos (`web, api, indexer, price-engine, analytics-engine, routing-engine, simulator`)
   with scan-on-push + lifecycle policy; versioned, encrypted, private S3 bucket for contract `.wasm`.
-- **cluster** — EKS 1.30, private endpoint + public access, audit logging, managed node group with
+- **cluster** - EKS 1.30, private endpoint + public access, audit logging, managed node group with
   `maxUnavailable: 1` rolling updates, cluster-autoscaler IAM policy.
 
 ## Kubernetes guide
@@ -142,7 +142,7 @@ Apply order (also in `kubernetes/README.md`):
 ```bash
 kubectl apply -f kubernetes/namespaces/
 kubectl apply -f kubernetes/secrets/            # ExternalSecrets (needs IRSA role from terraform first)
-kubectl apply -f kubernetes/jobs/migrate.yaml   # migrations BEFORE app rollout — schema always ahead of code
+kubectl apply -f kubernetes/jobs/migrate.yaml   # migrations BEFORE app rollout - schema always ahead of code
 kubectl apply -f kubernetes/api kubernetes/web kubernetes/indexer \
   kubernetes/price-engine kubernetes/analytics-engine kubernetes/routing-engine
 kubectl apply -f kubernetes/ingress/
@@ -273,7 +273,7 @@ backups, secrets, scalability + 3 signatures (platform/security/product).
 ## Troubleshooting
 
 - `terraform init` fails on backend: copy `backend.hcl.example` → `backend.hcl` and set the state bucket/table first.
-- ExternalSecrets not syncing: check the IRSA role (`external_secrets_role_arn` output — replace `ACCOUNT_ID`/`OIDC_PROVIDER`
+- ExternalSecrets not syncing: check the IRSA role (`external_secrets_role_arn` output - replace `ACCOUNT_ID`/`OIDC_PROVIDER`
   placeholders) and `kubectl describe externalsecret -n stellariq-prod`.
 - Pods pending: check `ResourceQuota` in `kubernetes/namespaces/quotas.yaml` and node-group sizing in env tfvars.
 - Staging deploy stuck: `kubectl -n stellariq-staging rollout status deploy/api`; `rollback.sh staging` to revert.
@@ -283,7 +283,7 @@ backups, secrets, scalability + 3 signatures (platform/security/product).
 
 - One task = one commit (`feat(infra): <kebab-case>`), verified before commit (YAML parsed, `bash -n` clean).
 - Never commit `.env`, `backend.hcl`, or any credential; update `.env.example` when adding variables.
-- Consumer repos (`stellariq-app`, `stellariq-data`, `stellariq-contract`) must call the shared workflows here — don't fork build logic.
+- Consumer repos (`stellariq-app`, `stellariq-data`, `stellariq-contract`) must call the shared workflows here - don't fork build logic.
 
 ## License
 
