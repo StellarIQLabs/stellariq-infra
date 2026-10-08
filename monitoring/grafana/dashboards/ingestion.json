@@ -1,6 +1,6 @@
 {
   "uid": "stellariq-ingestion",
-  "title": "StellarIQ — Ingestion & Indexer",
+  "title": "StellarIQ - Ingestion & Indexer",
   "tags": ["stellariq", "ingestion"],
   "timezone": "utc",
   "schemaVersion": 39,

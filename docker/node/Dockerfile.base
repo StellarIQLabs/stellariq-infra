@@ -1,4 +1,4 @@
-# StellarIQ Node base image — pinned, non-root, prod-ready.
+# StellarIQ Node base image - pinned, non-root, prod-ready.
 FROM node:22.11.0-bookworm-slim AS base
 
 ENV NODE_ENV=production \

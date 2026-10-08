@@ -1,6 +1,6 @@
 {
   "uid": "stellariq-api-health",
-  "title": "StellarIQ — API & Market Health",
+  "title": "StellarIQ - API & Market Health",
   "tags": ["stellariq", "slo"],
   "timezone": "utc",
   "schemaVersion": 39,

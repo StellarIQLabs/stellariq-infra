@@ -1,4 +1,4 @@
-# StellarIQ Soroban/Rust base image — pinned toolchain, non-root.
+# StellarIQ Soroban/Rust base image - pinned toolchain, non-root.
 FROM rust:1.83.0-bookworm AS base
 
 ENV CARGO_HOME=/usr/local/cargo \

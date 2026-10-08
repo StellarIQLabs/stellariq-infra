@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # End-to-end MVP smoke (PRD 1406): search asset, price, liquidity, compare markets,
-# inspect pools, quote, generate transaction — through deployed infra.
+# inspect pools, quote, generate transaction - through deployed infra.
 set -euo pipefail
 BASE="${1:-https://api.staging.stellariq.io}"
 

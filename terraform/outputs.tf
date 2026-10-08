@@ -58,7 +58,7 @@ output "postgres_endpoint" {
 }
 
 output "postgres_proxy_endpoint" {
-  description = "RDS Proxy endpoint — use this in app DATABASE_URL for connection pooling."
+  description = "RDS Proxy endpoint - use this in app DATABASE_URL for connection pooling."
   value       = module.postgres.proxy_endpoint
 }
 
